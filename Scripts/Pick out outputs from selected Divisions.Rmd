@@ -1,0 +1,42 @@
+---
+title: "Pick out outputs from selected Divisions"
+output: html_document
+---
+
+``` {r Libraries, echo=FALSE}
+library(tidyverse)
+library(readxl)
+library(plotly)
+```
+
+``` {r, echo=FALSE}
+
+
+username <- Sys.getenv("USERPROFILE")
+
+sqmmwkbk <- paste0(username, "/Office for National Statistics/Data Quality Hub - ONS_Quality_Reviews_(formerly_deep_dives)/Pause&Review/2023-11-14_SQMM2023_results (pause & review work).xlsx")
+sqmmsheet <- "detailed_summary_results"
+
+highlight = c("Financial Sector Accounts and Corporations", "Labour Market and Households", "National Accounts Coordination", "Surveys and Economic Indicators")
+
+detailed_results <- read_excel(sqmmwkbk, sheet = sqmmsheet) %>%
+  select(sqmm2023_expected_return_name, division_2023, mean_score, sources_score, meth.sys_score, proc_score,users.ppl_score, qual_score) %>%
+  rename(Output=sqmm2023_expected_return_name) %>%
+  mutate('1: Sources'  = sources_score,
+         '2: Methods & Systems' = meth.sys_score,
+         '3: Processes'= proc_score,
+         '4: Users & People' = users.ppl_score,
+         '5: Statistical Quality'= qual_score,
+         'Overall'  = mean_score
+         ) %>%
+  mutate(highlight = ifelse(division_2023 %in% highlight, division_2023, "Other")) %>%
+  select(!c(mean_score, sources_score, meth.sys_score, proc_score,users.ppl_score, qual_score)) %>%
+  pivot_longer(cols=c('1: Sources','2: Methods & Systems','3: Processes','4: Users & People','5: Statistical Quality','Overall'),
+                 names_to = "Theme", values_to = "Score")
+
+
+p <-ggplot(detailed_results, aes(x=Theme, y=Score, label= Output, color=highlight)) + geom_point(position = "jitter")
+
+ggplotly(p)
+
+```
